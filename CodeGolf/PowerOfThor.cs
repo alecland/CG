@@ -1,0 +1,1 @@
+using System;using System.IO;class P{static void Main(){string[] i=Console.ReadLine().Split(' ');int X=int.Parse(i[0]);int Y=int.Parse(i[1]);int x=int.Parse(i[2]);int y=int.Parse(i[3]);string r;while(0<1){r="";if(Y-y<0){r="N";y--;}else if(Y-y>0){r="S";y++;}if(X-x<0){x--;r+="W";}else if(X-x>0){x++;r+="E";}Console.WriteLine(r);}}}

@@ -15,6 +15,13 @@ public:
 
 	Vec2D(int p_x, int p_y) : x(p_x), y(p_y) {}
 	Vec2D() : x(0), y(0) {}
+	
+	double distance2(Vec2D& p) {
+	    return (x - p.x)*(x - p.x) + (y - p.y)*(y - p.y);
+	}
+	double distance2(int p_x, int p_y) {
+	    return (x - p_x)*(x - p_x) + (y - p_y)*(y - p_y);
+	}
 };
 
 class Grid {
@@ -23,6 +30,8 @@ class Grid {
     int m_bestBombSpots[13][11];
     Vec2D m_playerPos[MAX_PLAYER];
     Vec2D nextMove;
+    Vec2D bestMove;
+    string nextAction;
     int m_myId;
     int m_maxTurnScore;
     
@@ -34,6 +43,16 @@ class Grid {
         }
     }
     
+    void updatePlayer(int p_owner, int p_x, int p_y, int p_param1, int p_param2) {
+	    //TODO Create a Player class, and update this method
+        m_playerPos[p_owner].x = p_x;
+	    m_playerPos[p_owner].y = p_y;
+    }	
+    
+    void updateBomb(int p_owner, int p_x, int p_y, int p_param1, int p_param2) {
+    	//TODO Create a Bomb class and fill this method
+    }
+	
     void fillBestSpots() {
         m_maxTurnScore = 0;
         for (int x = 0; x < 13; x++) {
@@ -52,6 +71,28 @@ class Grid {
                 if (m_bestBombSpots[x][y] > m_maxTurnScore)
                     m_maxTurnScore = m_bestBombSpots[x][y];
             }
+        }
+    }
+	
+    void computeBestMove() {
+    	double closestDist = 999999.0;
+    	for (int x = 0; x < 13; x++) {
+            for (int y = 0; y < 11; y++) {
+                if (m_bestBombSpots[x][y] == m_maxTurnScore && m_playerPos[m_myId].distance2(x, y) < closestDist) {
+		            bestMove.x = x;
+		            bestMove.y = y;
+	                closestDist = m_playerPos[m_myId].distance2(x, y);
+		        }
+            }
+        }
+    }
+	
+    void setNextAction() {
+        if (m_playerPos[m_myId].x == bestMove.x && m_playerPos[m_myId].y == bestMove.y) {
+	        nextAction = "BOMB";
+	    }
+        else {
+	        nextAction = "MOVE";
         }
     }
 };
@@ -89,11 +130,17 @@ int main()
             int param1;
             int param2;
             cin >> entityType >> owner >> x >> y >> param1 >> param2; cin.ignore();
+            if (entityType == 0)
+	    	m_grid.updatePlayer(owner, x, y, param1, param2);
+            else if (entityType == 1)
+	    	m_grid.updateBomb(owner, x, y, param1, param2);
         }
+	m_grid.computeBestMove();
+	m_grid.setNextAction();
 
         // Write an action using cout. DON'T FORGET THE "<< endl"
         // To debug: cerr << "Debug messages..." << endl;
 
-        cout << "BOMB 6 5" << endl;
+        cout << m_grid.nextAction << " " << m_grid.bestMove.x << " " << m_grid.bestMove.y << endl;
     }
 }

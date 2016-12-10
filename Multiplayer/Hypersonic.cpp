@@ -8,6 +8,16 @@ using namespace std;
 #define BOMB_RANGE 2
 #define MAX_PLAYER 2
 
+bool isBox(char p_char) {
+    if (p_char >= '0' && p_char <= '9')
+        return true;
+    else
+        return false;
+}
+bool isWall(char p_char) {
+    return p_char == 'X';
+}
+
 class Vec2D {
 public:
 	int x;
@@ -68,21 +78,21 @@ class Grid {
         }
     }
 	
-    void fillBestSpots() {
-        // TODO Update to take walls into account
+    void fillBestSpots() {        
         // TODO Update to consider only reachable positions
+        // TODO Consider that a position with a bob is no longer a good spot
         m_maxTurnScore = 0;
         for (int x = 0; x < 13; x++) {
             for (int y = 0; y < 11; y++) {
                 m_bestBombSpots[x][y] = 0;
                 if (m_map[x][y] == '.') {
-                    if ((x - 1) >= 0 && m_map[x - 1][y] != '.' || (x - 2) >= 0 && m_map[x - 2][y] != '.')
+                    if ((x - 1) >= 0 && isBox(m_map[x - 1][y]) && !isWall(m_map[x - 1][y]) || (x - 2) >= 0 && isBox(m_map[x - 2][y]))
                         m_bestBombSpots[x][y]++;
-                    if ((x + 1) < 13 && m_map[x + 1][y] != '.' || (x + 2) < 13 && m_map[x + 2][y] != '.')
+                    if ((x + 1) < 13 && isBox(m_map[x + 1][y]) && !isWall(m_map[x + 1][y]) || (x + 2) < 13 && isBox(m_map[x + 2][y]))
                         m_bestBombSpots[x][y]++;
-                    if ((y - 1) >= 0 && m_map[x][y - 1] != '.' || (y - 2) >= 0 && m_map[x][y - 2] != '.')
+                    if ((y - 1) >= 0 && isBox(m_map[x][y - 1]) && !isWall(m_map[x][y - 1]) || (y - 2) >= 0 && isBox(m_map[x][y - 2]))
                         m_bestBombSpots[x][y]++;
-                    if ((y + 1) < 11 && m_map[x][y + 1] != '.' || (y + 2) < 11 && m_map[x][y + 2] != '.')
+                    if ((y + 1) < 11 && isBox(m_map[x][y + 1]) && !isWall(m_map[x][y + 1]) || (y + 2) < 11 && isBox(m_map[x][y + 2]))
                         m_bestBombSpots[x][y]++;
                 } 
                 if (m_bestBombSpots[x][y] > m_maxTurnScore)
@@ -104,7 +114,7 @@ class Grid {
         }
     }
     
-    // TODO Creat a new method to to verify if making the best move won't kill me as OP bombs are now harmful
+    // TODO Create a new method to to verify if making the best move won't kill me as OP bombs are now harmful
 	
     void setNextAction() {
         if (m_playerPos[m_myId].x == bestMove.x && m_playerPos[m_myId].y == bestMove.y) {

@@ -52,6 +52,17 @@ class Grid {
     void updateBomb(int p_owner, int p_x, int p_y, int p_param1, int p_param2) {
     	//TODO Create a Bomb class and fill this method
     }
+    
+    void printGrid() {
+    
+        cerr << "View of the current grid..." << endl;
+	for (int y = 0; y < 11; y++) {
+            for (int x = 0; x < 13; x++) {
+                cerr << m_map[x][y];
+            }
+            cerr << endl;
+        }
+    }
 	
     void fillBestSpots() {
         m_maxTurnScore = 0;
@@ -59,13 +70,13 @@ class Grid {
             for (int y = 0; y < 11; y++) {
                 m_bestBombSpots[x][y] = 0;
                 if (m_map[x][y] == '.') {
-                    if ((x - 1) >= 0 && m_map[x - 1][y] == '0' || (x - 2) >= 0 && m_map[x - 2][y] == '0')
+                    if ((x - 1) >= 0 && m_map[x - 1][y] != '.' || (x - 2) >= 0 && m_map[x - 2][y] != '.')
                         m_bestBombSpots[x][y]++;
-                    if ((x + 1) < 13 && m_map[x + 1][y] == '0' || (x + 2) < 13 && m_map[x + 2][y] == '0')
+                    if ((x + 1) < 13 && m_map[x + 1][y] != '.' || (x + 2) < 13 && m_map[x + 2][y] != '.')
                         m_bestBombSpots[x][y]++;
-                    if ((y - 1) >= 0 && m_map[x][y - 1] == '0' || (y - 2) >= 0 && m_map[x][y - 2] == '0')
+                    if ((y - 1) >= 0 && m_map[x][y - 1] != '.' || (y - 2) >= 0 && m_map[x][y - 2] != '.')
                         m_bestBombSpots[x][y]++;
-                    if ((y + 1) < 11 && m_map[x][y + 1] == '0' || (y + 2) < 11 && m_map[x][y + 2] == '0')
+                    if ((y + 1) < 11 && m_map[x][y + 1] != '.' || (y + 2) < 11 && m_map[x][y + 2] != '.')
                         m_bestBombSpots[x][y]++;
                 } 
                 if (m_bestBombSpots[x][y] > m_maxTurnScore)
@@ -135,8 +146,9 @@ int main()
             else if (entityType == 1)
 	    	m_grid.updateBomb(owner, x, y, param1, param2);
         }
-	m_grid.computeBestMove();
-	m_grid.setNextAction();
+	    m_grid.computeBestMove();
+	    m_grid.setNextAction();
+	    m_grid.printGrid();
 
         // Write an action using cout. DON'T FORGET THE "<< endl"
         // To debug: cerr << "Debug messages..." << endl;

@@ -53,6 +53,10 @@ class Grid {
     	//TODO Create a Bomb class and fill this method
     }
     
+    void updateItem(int p_owner, int p_x, int p_y, int p_param1, int p_param2) {
+    	//TODO Create an Item class and fill this method
+    }
+    
     void printGrid() {
     
         cerr << "View of the current grid..." << endl;
@@ -65,6 +69,8 @@ class Grid {
     }
 	
     void fillBestSpots() {
+        // TODO Update to take walls into account
+        // TODO Update to consider only reachable positions
         m_maxTurnScore = 0;
         for (int x = 0; x < 13; x++) {
             for (int y = 0; y < 11; y++) {
@@ -97,6 +103,8 @@ class Grid {
             }
         }
     }
+    
+    // TODO Creat a new method to to verify if making the best move won't kill me as OP bombs are now harmful
 	
     void setNextAction() {
         if (m_playerPos[m_myId].x == bestMove.x && m_playerPos[m_myId].y == bestMove.y) {
@@ -142,13 +150,15 @@ int main()
             int param2;
             cin >> entityType >> owner >> x >> y >> param1 >> param2; cin.ignore();
             if (entityType == 0)
-	    	m_grid.updatePlayer(owner, x, y, param1, param2);
+                m_grid.updatePlayer(owner, x, y, param1, param2);
             else if (entityType == 1)
-	    	m_grid.updateBomb(owner, x, y, param1, param2);
+                m_grid.updateBomb(owner, x, y, param1, param2);
+            else if (entityType == 2)
+                m_grid.updateItem(owner, x, y, param1, param2);
         }
-	    m_grid.computeBestMove();
-	    m_grid.setNextAction();
-	    m_grid.printGrid();
+        m_grid.computeBestMove();
+        m_grid.setNextAction();
+        m_grid.printGrid();
 
         // Write an action using cout. DON'T FORGET THE "<< endl"
         // To debug: cerr << "Debug messages..." << endl;

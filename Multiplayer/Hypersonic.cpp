@@ -34,11 +34,22 @@ public:
 	}
 };
 
+class Player {
+    public:
+    Vec2D m_position;
+    int m_maxBombs;
+    int m_maxRange;
+    int m_curBombsNb;
+    
+    Player() : m_maxBombs(1),  m_maxRange(3), m_curBombsNb(0) {}
+};
+
 class Grid {
+    // TODO Make a separate Game class, containing a Grid instance
     public:
     char m_map[13][11];
     int m_bestBombSpots[13][11];
-    Vec2D m_playerPos[MAX_PLAYER];
+    Player m_players[MAX_PLAYER];
     Vec2D nextMove;
     Vec2D bestMove;
     string nextAction;
@@ -54,9 +65,10 @@ class Grid {
     }
     
     void updatePlayer(int p_owner, int p_x, int p_y, int p_param1, int p_param2) {
-	    //TODO Create a Player class, and update this method
-        m_playerPos[p_owner].x = p_x;
-	    m_playerPos[p_owner].y = p_y;
+        m_players[p_owner].m_position.x = p_x;
+	    m_players[p_owner].m_position.y = p_y;
+	    m_players[p_owner].m_maxBombs = p_param1;
+	    m_players[p_owner].m_maxRange = p_param2;
     }	
     
     void updateBomb(int p_owner, int p_x, int p_y, int p_param1, int p_param2) {
@@ -105,10 +117,10 @@ class Grid {
     	double closestDist = 999999.0;
     	for (int x = 0; x < 13; x++) {
             for (int y = 0; y < 11; y++) {
-                if (m_bestBombSpots[x][y] == m_maxTurnScore && m_playerPos[m_myId].distance2(x, y) < closestDist) {
+                if (m_bestBombSpots[x][y] == m_maxTurnScore && m_players[m_myId].m_position.distance2(x, y) < closestDist) {
 		            bestMove.x = x;
 		            bestMove.y = y;
-	                closestDist = m_playerPos[m_myId].distance2(x, y);
+	                closestDist = m_players[m_myId].m_position.distance2(x, y);
 		        }
             }
         }
@@ -117,7 +129,7 @@ class Grid {
     // TODO Create a new method to to verify if making the best move won't kill me as OP bombs are now harmful
 	
     void setNextAction() {
-        if (m_playerPos[m_myId].x == bestMove.x && m_playerPos[m_myId].y == bestMove.y) {
+        if (m_players[m_myId].m_position.x == bestMove.x && m_players[m_myId].m_position.y == bestMove.y) {
 	        nextAction = "BOMB";
 	    }
         else {
@@ -176,3 +188,4 @@ int main()
         cout << m_grid.nextAction << " " << m_grid.bestMove.x << " " << m_grid.bestMove.y << endl;
     }
 }
+

@@ -18,7 +18,7 @@ class Player {
 
         if (p4_currentFloor == m4_exitFloor)
             l4_targetPos = m4_exitPos;
-        else if (p4_currentFloor > -1)
+        else if (p4_currentFloor >= m4_highestFloor)
             l4_targetPos = mt4_elevatorList[m4_highestFloor];
         
         return l4_targetPos;
@@ -65,11 +65,16 @@ class Player {
             
             updateHighestFloor(cloneFloor);
             int l4_targetPos = getTarget(cloneFloor);
-            System.err.println(l4_targetPos);           
+            System.err.println(cloneFloor);
+            System.err.println(clonePos);
+            System.err.println(direction); 
+            System.err.println(l4_targetPos);   
+            System.err.println(mm44_blockedFloors.get(cloneFloor));
 
-                
-            if (direction.charAt(0) == 'L') {
-                if (clonePos >= l4_targetPos  || mm44_blockedFloors.get(cloneFloor) != -1)
+            if (l4_targetPos == -1)
+                System.out.println("WAIT");
+            else if (direction.charAt(0) == 'L') {
+                if (clonePos >= l4_targetPos  || mm44_blockedFloors.get(cloneFloor) != -1 || cloneFloor != m4_highestFloor)
                     System.out.println("WAIT");
                 else {
                     System.out.println("BLOCK");
@@ -77,16 +82,17 @@ class Player {
                 }
             }
             else if (direction.charAt(0) == 'R') {
-                if (clonePos <= l4_targetPos || mm44_blockedFloors.get(cloneFloor) != -1)                    
+                if (clonePos <= l4_targetPos || mm44_blockedFloors.get(cloneFloor) != -1 || cloneFloor != m4_highestFloor)                    
                     System.out.println("WAIT");
                 else {
                     System.out.println("BLOCK");
                     mm44_blockedFloors.put(cloneFloor, clonePos);
                 }
             }
-
-            // No clone on board, WAIT
-            System.out.println("WAIT");
+            else {
+                // No clone on board, WAIT
+                System.out.println("WAIT");
+            }
         }
     }
 }

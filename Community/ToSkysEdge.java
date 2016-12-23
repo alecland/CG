@@ -14,14 +14,14 @@ class Solution {
         int C = in.nextInt();
         int N = in.nextInt();
         System.err.println(String.valueOf(Y) + " " + String.valueOf(C) + " " + String.valueOf(N));
-        Map<Integer, Integer> population;
-        Map<Integer, Integer> initialPop = new HashMap<Integer, Integer>();
+        Map<Integer, Long> population;
+        Map<Integer, Long> initialPop = new HashMap<Integer, Long>();
         for (int i = 0; i < 150; i++) {
-            initialPop.put(i, 0);
+            initialPop.put(i, 0L);
         }
         for (int i = 0; i < N; i++) {
             int AGE = in.nextInt();
-            int NUMBER = in.nextInt();
+            long NUMBER = (long)in.nextInt();
             initialPop.put(AGE, NUMBER);
             System.err.println(String.valueOf(AGE) + " " + String.valueOf(NUMBER));
         }
@@ -32,8 +32,8 @@ class Solution {
         
         while (minAge == 0 || maxAge == 0) {
             // reset population
-            population = new HashMap<Integer, Integer>(initialPop); 
-            int repCount = 0;
+            population = new HashMap<Integer, Long>(initialPop); 
+            long repCount = 0;
             
             for (int y = 0; y < Y; y++) {
                 // Every crew member will get older by one year
@@ -43,7 +43,7 @@ class Solution {
                     if (i >= 20 && i <= testAge/2)
                         repCount += population.get(i);
                 }
-                population.put(0, repCount/10);
+                population.put(0, (long)(repCount/10));
                 //System.err.println(population.get(0));
             }
             

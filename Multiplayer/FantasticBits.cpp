@@ -1504,17 +1504,51 @@ void play() {
 double eval() {
     
     int score = 0;
+    double distance1[20];
+    double distance2[20];
+    int idx1 = 0;
+    int idx2 = 0;
     
     for (int i = 0; i < snafflesFE; ++i) 
     {
         if (!snaffles[i]->dead) {
             score -= dist(snaffles[i], myGoal);
-            score -= dist(snaffles[i], myWizard1) * 0.2;
-            score -= dist(snaffles[i], myWizard2) * 0.2;
+            distance1[i] = dist2(snaffles[i], myWizard1);
+            distance2[i] = dist2(snaffles[i], myWizard2);
+            if (distance1[i] < distance1[idx1])
+                idx1 = i;
+            if (distance2[i] < distance2[idx2])
+                idx2 = i;
         }
     }
     
+    if (idx1 != idx2 || snafflesFE == 0) {
+        score -= sqrt(distance1[idx1]);
+        score -= sqrt(distance2[idx2]);
+    }
+    else if (distance1[idx1] < distance2[idx2]) {
+        score -= sqrt(distance1[idx1]);
+        distance2[idx2] = 5000000000;
+        for (int i = 0; i < snafflesFE; ++i) {
+            if (distance2[i] < distance2[idx2]) {
+                idx2 = i;
+            }
+        }
+        score -= sqrt(distance2[idx2]);
+    }
+    else if (distance2[idx2] < distance1[idx1]) {
+        score -= sqrt(distance2[idx2]);
+        distance1[idx1] = 5000000000;
+        for (int i = 0; i < snafflesFE; ++i) {
+            if (distance1[i] < distance1[idx1]) {
+                idx1 = i;
+            }
+        }
+        score -= sqrt(distance1[idx1]);
+    }
+    
     score += myMana * 200;
+    score += (myScore - hisScore) * 100000;
     
     return score;
 }

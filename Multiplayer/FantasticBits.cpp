@@ -40,8 +40,8 @@ constexpr int OBLIVIATE = 0;
 constexpr int PETRIFICUS = 1;
 constexpr int ACCIO = 2;
 constexpr int FLIPENDO = 3;
-constexpr int SPELL_DURATIONS[] = {3, 1, 6, 3};
-constexpr int SPELL_COSTS[] = {5, 10, 20, 20};
+constexpr int SPELL_DURATIONS[] = {4, 1, 6, 3};
+constexpr int SPELL_COSTS[] = {5, 10, 15, 20};
 
 constexpr double E = 0.00001;
 constexpr int VERTICAL = 1;

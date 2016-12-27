@@ -56,7 +56,7 @@ constexpr double TO_RAD = M_PI / 180.0;
 constexpr double ANGLES[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0};
 constexpr int ANGLES_LENGTH = 36;
 
-constexpr int DEPTH = 4;
+constexpr int DEPTH = 5;
 constexpr int SPELL_DEPTH = 8;
 constexpr int POOL = 50;
 constexpr double MUTATION = 2;
@@ -1512,6 +1512,7 @@ double eval() {
     for (int i = 0; i < snafflesFE; ++i) 
     {
         if (!snaffles[i]->dead) {
+            // Update score according to distance between snaffles and goal
             score -= dist(snaffles[i], myGoal);
             distance1[i] = dist2(snaffles[i], myWizard1);
             distance2[i] = dist2(snaffles[i], myWizard2);
@@ -1522,32 +1523,33 @@ double eval() {
         }
     }
     
-    if (idx1 != idx2 || snafflesFE == 0) {
-        score -= sqrt(distance1[idx1]);
-        score -= sqrt(distance2[idx2]);
-    }
-    else if (distance1[idx1] < distance2[idx2]) {
-        score -= sqrt(distance1[idx1]);
-        distance2[idx2] = 5000000000;
-        for (int i = 0; i < snafflesFE; ++i) {
-            if (distance2[i] < distance2[idx2]) {
-                idx2 = i;
+    if (idx1 == idx2 && snafflesFE != 0) {    
+        if (distance1[idx1] < distance2[idx2]) {
+            distance2[idx2] = INF;
+            for (int i = 0; i < snafflesFE; ++i) {
+                if (distance2[i] < distance2[idx2]) {
+                    idx2 = i;
+                }
             }
         }
-        score -= sqrt(distance2[idx2]);
-    }
-    else if (distance2[idx2] < distance1[idx1]) {
-        score -= sqrt(distance2[idx2]);
-        distance1[idx1] = 5000000000;
-        for (int i = 0; i < snafflesFE; ++i) {
-            if (distance1[i] < distance1[idx1]) {
-                idx1 = i;
+        else if (distance2[idx2] < distance1[idx1]) {
+            distance1[idx1] = INF;
+            for (int i = 0; i < snafflesFE; ++i) {
+                if (distance1[i] < distance1[idx1]) {
+                    idx1 = i;
+                }
             }
         }
-        score -= sqrt(distance1[idx1]);
     }
     
-    score += myMana * 200;
+    // Update score according to distance between my wizards and their closest snaffle
+    score -= sqrt(distance1[idx1]) * 0.95;
+    score -= sqrt(distance2[idx2]) * 0.95;
+    
+    // Update score according to mana used
+    score += myMana * 215;
+    
+    // Update score according to score
     score += (myScore - hisScore) * 100000;
     
     return score;

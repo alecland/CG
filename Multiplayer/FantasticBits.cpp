@@ -1550,7 +1550,7 @@ double eval() {
     score += myMana * 215;
     
     // Update score according to score
-    score += (myScore - hisScore) * 100000;
+    score += (myScore - hisScore) * 16000 * (DEPTH - depth + 1);
     
     return score;
 }

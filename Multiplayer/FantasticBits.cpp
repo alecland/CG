@@ -13,7 +13,7 @@ using namespace std;
 using namespace std::chrono;
 
 // #define PROFILE
-// #define PROD
+#define PROD
 // #define DEBUG
 
 #ifdef PROFILE
@@ -1550,7 +1550,8 @@ double eval() {
     score += myMana * 215;
     
     // Update score according to score
-    score += (myScore - hisScore) * 16000 * (DEPTH - depth + 1);
+    score -= hisScore * 16000 * (DEPTH - depth + 1);
+    score += myScore * 8000 * (DEPTH - depth + 1);
     
     return score;
 }

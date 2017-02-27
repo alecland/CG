@@ -13,15 +13,24 @@ class Factory {
     int cyborgsProd;
     int dist[15];
     bool isChecked[15];
+    bool isAvailable; // Flag if already bombing this turn
+    bool isDisabled;
     
-    Factory () : playerId(0), cyborgsCount(0), cyborgsProd(0) {}
+    Factory () : playerId(0), cyborgsCount(0), cyborgsProd(0), isAvailable(true), isDisabled(false) {
+        for (int i = 0; i < 15; i++) {
+            if (i != id)
+                dist[i] = -1;
+        } 
+    }
     
     void reset() {
         for (int i = 0; i < 15; i++) {
             if (i != id)
                 isChecked[i] = false;
-        }        
-    }
+        }   
+        isAvailable = true;
+    }  
+    
 };
 
 class Link {
@@ -52,15 +61,37 @@ class Game {
     Troop* troops;
     int factoryCount;
     int linkCount;
+    int myBombsCount;
+    int opBombsCount;
+    
+    Game() : myBombsCount(2), opBombsCount(2) {}
     
     int getMorePopFactory(int p_playerId)
     {
         int maxCyborgPop = 0;
         int result = -1;
         for (int i = 0; i < factoryCount; i++) {
-            if (factories[i]->playerId == p_playerId && factories[i]->cyborgsCount > maxCyborgPop) {
+            if (factories[i]->playerId == p_playerId
+            && factories[i]->isAvailable
+            && factories[i]->cyborgsCount > maxCyborgPop) {
                 result = i;
                 maxCyborgPop = factories[i]->cyborgsCount;
+            }
+        }
+        return result;
+    }
+    
+    int getWorthyBombTarget() {
+        int maxProd = 1;
+        int result = -1;
+        if (myBombsCount != 0) {
+            for (int i = 0; i < factoryCount; i++) {
+                if (factories[i]->playerId == -1
+                && factories[i]->cyborgsProd > maxProd
+                && !factories[i]->isDisabled) {
+                    result = i;
+                    maxProd = factories[i]->cyborgsProd;
+                }
             }
         }
         return result;
@@ -89,6 +120,23 @@ class Game {
         if (result != -1)
             factories[p_fromId]->isChecked[result] = true;
             
+        return result;
+    }
+    
+    int getClosestFactory(int p_playerId, int p_factoryId) {
+        int minDist = 50000;
+        int result = -1;
+        for (int i = 0; i < factoryCount; i++) {
+            cerr << factories[p_factoryId]->playerId << " " << factories[p_factoryId]->dist[i] << endl;
+            if (p_factoryId != factories[i]->id
+            && factories[i]->playerId == p_playerId
+            && factories[p_factoryId]->dist[i] > 0
+            && factories[p_factoryId]->dist[i] < minDist)
+            {
+                minDist = factories[p_factoryId]->dist[i];
+                result = i;
+            }
+        }
         return result;
     }
     
@@ -174,6 +222,16 @@ int main()
             to = game.getWorthyTarget(1, from);
 
         cout << "WAIT;";
+        
+        int bombTo = -1;
+        bombTo = game.getWorthyBombTarget();
+        if (bombTo != -1) {
+            int bombFrom = game.getClosestFactory(1, bombTo);
+            cout << "BOMB " << bombFrom << " " << bombTo << ";";
+            factories[bombFrom]->isAvailable = false;
+            factories[bombTo]->isDisabled = true;
+            game.myBombsCount--;
+        }
         
         while (to != -1)
         {

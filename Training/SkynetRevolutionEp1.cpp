@@ -1,421 +1,207 @@
 #include <iostream>
 #include <string>
-#include <map>
 #include <vector>
+#include <map>
 #include <algorithm>
+
+#define INT_MAX 32767
 
 using namespace std;
 
-class Graph {
+class Graph
+{
     public:
- 
-    map<int, map<int, int>> dist;
-    map<int, map<int, int>> dist_opt;
-    map<int, map<int, int>> next;
-    int dimension;
-   
-    //class Link { public int a, b; Link (int a, int b) { this.a = a; this.b = b; } }
-    Graph (map<int, map<int, int>>& p_dist, int p_dimension) {
-        dist = p_dist;
-        dimension = p_dimension;
-        floyd_warshall();
-    }
-   
-    void floyd_warshall () {
-        int n = dimension;
-        dist_opt.clear();
-        next.clear();
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++) {
-                next[i][j] = j;
-                dist_opt[i][j] = dist[i][j];
-            }
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++) {
-                if (i != j)
-                    for (int k = 0; k < n; k++) {
-                        if (k != i && k != j && dist_opt[i][k]+dist_opt[k][j] < dist_opt[i][j] ) {
-                            dist_opt[i][j] = dist_opt[i][k]+dist_opt[k][j];
-                            next[i][j] = k;
-                        }
-                    }
-            }
-    }
- 
-};
-
-class Troop {
-    public:
-    int id;
-    int playerId;
-    int cyborgsCount;
-    int turnsCount;  
-    int factoryFrom;
-    int factoryTo;
-   
-    Troop () {} 
-    Troop (int p_id, int p_cyborgsCount, int p_turnsCount, int p_from, int p_to) : playerId(p_id), cyborgsCount(p_cyborgsCount), turnsCount(p_turnsCount), factoryFrom(p_from), factoryTo(p_to) {}
-};
-
-class Factory {
-    public:
-    int id;
-    int playerId;
-    int cyborgsCount;
-    int cyborgsProd;
-    int dist[15];
-    int helpNeed[25];
-    int virtualCount[25];
-    bool isChecked[15];
-    bool isAvailable; // Flag if already bombing this turn or defending
-    bool isDisabled;
-    vector<int> incomingTroops;    
+    map<int, map<int, int>> mc_matrix;
+    map<int, bool> mc_gateways;
     
-    Factory () : playerId(0), cyborgsCount(0), cyborgsProd(0), isAvailable(true), isDisabled(false) {
-        for (int i = 0; i < 15; i++) {
-            if (i != id)
-                dist[i] = -1;
-        } 
-        
-        for (int i = 0; i < 25; i++) {
-            helpNeed[i] = 0;
-        }
-    }
+    // To be set when computing shortest path
     
-    void reset() {
-        for (int i = 0; i < 15; i++) {
-            if (i != id)
-                isChecked[i] = false;
-            incomingTroops.clear();
-        }   
-        isAvailable = true;
-    }  
+    // The output array. dist[i] will hold
+    // the shortest distance from src to i
+    map<int, int> mc_dist;
+    // sptSet[i] will true if vertex i is included / in shortest
+    // path tree or shortest distance from src to i is finalized
+    map<int, bool> mc_sptSet;
+    // Parent array to store shortest path tree
+    map<int, int> mc_parent;
     
-};
-
-class Link {
-    public:
-    Factory* factoryFrom;
-    Factory* factoryTo;
-    int distance;
+    int m4_vertexNb;
+    int m4_edgeNb;
+    int m4_gatewayNb;
     
-    Link (Factory* p_from, Factory* p_to, int p_dist) : factoryFrom(p_from), factoryTo(p_to), distance(p_dist) {}
-};
-
-
-class Game {
-    public:
-    Link** links;
-    Factory** factories;
-    Troop* troops;
-    Graph* graph;
-    int opBase;
-    int factoryCount;
-    int linkCount;
-    int troopsCount;
-    int myBombsCount;
-    int opBombsCount;
-    int myCyborgsCount;
-    int opCyborgsCount;
-    
-    Game() : myBombsCount(2), opBombsCount(2), myCyborgsCount(0), opCyborgsCount(0), opBase(-1) {}
-        
-    int getMorePopFactory(int p_playerId)
+    Graph(int p4_V, int p4_E, int p4_G)
     {
-        int maxCyborgPop = 0;
-        int result = -1;
-        for (int i = 0; i < factoryCount; i++) {
-            if (factories[i]->playerId == p_playerId
-            && factories[i]->isAvailable
-            && factories[i]->cyborgsCount > maxCyborgPop) {
-                result = i;
-                maxCyborgPop = factories[i]->cyborgsCount;
+        m4_vertexNb = p4_V;
+        m4_edgeNb = p4_E;
+        m4_gatewayNb = p4_G;       
+        for (int i = 0; i < p4_V; i++) {
+            mc_gateways[i] = false;
+            for (int j = 0; j < p4_V; j++) {
+                mc_matrix[i][j] = 0;
             }
         }
-        return result;
     }
     
-    int getWorthyBombTarget() {
-        int maxProd = 1;
-        int result = -1;
-        if (myBombsCount != 0) {
-            for (int i = 0; i < factoryCount; i++) {
-                if (factories[i]->playerId == -1
-                && factories[i]->cyborgsProd > maxProd
-                && !factories[i]->isDisabled) {
-                    result = i;
-                    maxProd = factories[i]->cyborgsProd;
-                }
-            }
-        }
-        return result;
+    // A utility function to find the vertex with minimum distance
+    // value, from the set of vertices not yet included in shortest
+    // path tree
+    int minDistance()
+    {
+        // Initialize min value
+        int min = INT_MAX, min_index;
+     
+        for (int v = 0; v < m4_vertexNb; v++)
+            if (mc_sptSet[v] == false && mc_dist[v] <= min)
+                min = mc_dist[v], min_index = v;
+     
+        return min_index;
     }
     
-    int getWorthyTarget(int p_playerId, int p_fromId) {
-        int minCyborgPop = 50000;
-        int maxProd = 3;
-        int result = -1;
-        while (result == -1 && maxProd != -1) {
-            for (int i = 0; i < factoryCount; i++) {
-                if (factories[i]->playerId == p_playerId 
-                 && !factories[p_fromId]->isChecked[i]
-                && factories[i]->cyborgsProd == maxProd
-                && factories[i]->cyborgsCount < minCyborgPop)
-                {
-                    result = i;
-                    maxProd = factories[i]->cyborgsProd;
-                    minCyborgPop = factories[i]->cyborgsCount;
-                }
-                
-            }
-             maxProd--;
+    // Function to print shortest path from source to j
+    // using parent array
+    void printPath(int j)
+    {
+        // Base Case : If j is source
+        if (mc_parent[j]==-1)
+            return;
+     
+        printPath(mc_parent[j]);
+     
+        cerr << j << " ";
+    }
+     
+    // A utility function to print the constructed distance
+    // array
+    void printSolution(int src)
+    {
+        cerr << "Vertex\t  Distance\tPath" << endl;
+        for (int i = 1; i < m4_vertexNb; i++)
+        {
+            cerr << endl << src << " -> " << i << " \t\t" << mc_dist[i] << "\t\t" << src << " ";
+            //printf("\n%d -> %d \t\t %d\t\t%d ", src, i, dist[i], src);
+            printPath(i);
         }
+    }
+    
+    // Funtion that implements Dijkstra's single source shortest path
+    // algorithm for a graph represented using adjacency matrix
+    // representation
+    void dijkstra (int src)
+    {
+        // Initialize all distances as INFINITE and stpSet[] as false
         
-        if (result != -1)
-            factories[p_fromId]->isChecked[result] = true;
-            
-        return result;
-    }
-    
-    int getWorthyTarget(int p_fromId) {
-        int maxScore = -5000;               
-        int result = -1;
-
-        for (int i = 0; i < factoryCount; i++) {
-            int score = 0;
-            score += factories[i]->cyborgsProd * 5;
-            if (factories[i]->playerId == 0)
-                score -= factories[i]->cyborgsCount;
-            //else if (factories[i]->playerId == -1)
-            //    score -= factories[i]->cyborgsCount;
-            if (factories[i]->playerId == 1)
-                score -= 50000;
-            score -= graph->dist_opt[p_fromId][i];
-            if (factories[p_fromId]->isChecked[i])
-                score -= 50000;
-            
-            if (score > maxScore) {
-                result = i;
-                maxScore = score;
-            }
-        }
-
-        cerr << p_fromId << " " << result << " " << maxScore << endl;
-        if (result != -1)
-            factories[p_fromId]->isChecked[result] = true;
-            
-        return result;
-    }
-    
-    int getWorthyIncrease() {
-        int maxDist = 0;
-        int result = -1;
-        if (myCyborgsCount > opCyborgsCount + 10) {
-            for (int i = 0; i < factoryCount; i++) {            
-                if (factories[i]->playerId == 1 
-                && factories[i]->cyborgsCount > 10
-                && factories[i]->cyborgsProd != 3
-                && factories[i]->isAvailable
-                && graph->dist_opt[i][opBase] > maxDist)
-                {
-                    maxDist = graph->dist_opt[i][opBase];
-                    result = i;
-                }
-            }
-        }
-        return result;
-    }
-    
-    int disableDefendingFactories() {
-        for (int i = 0; i < factoryCount; i++) {  
-            int prodTurnSimu = 0;
-            if (factories[i]->playerId == 1) {
-                for (int j = 0; j < troopsCount; j++) { 
-                    if (troops[j].playerId == -1
-                    && troops[j].factoryTo == i)                   
-                    {
-                        // Do something
-                    }
-                }
-            }
-        }
-    }
-    
-    int getClosestFactory(int p_playerId, int p_factoryId) {
-        int minDist = 50000;
-        int result = -1;
-        for (int i = 0; i < factoryCount; i++) {
-            cerr << factories[p_factoryId]->playerId << " " << factories[p_factoryId]->dist[i] << endl;
-            if (p_factoryId != factories[i]->id
-            && factories[i]->playerId == p_playerId
-            && factories[p_factoryId]->dist[i] > 0
-            && factories[p_factoryId]->dist[i] < minDist)
+        for (int i = 0; i < m4_vertexNb; i++)
+        {
+            mc_parent[i] = -1;           
+            mc_dist[i] = INT_MAX;
+            mc_sptSet[i] = false;
+        }        
+        
+        // Distance of source vertex from itself is always 0
+        mc_dist[src] = 0;
+        
+        // Find shortest path for all vertices
+        for (int count = 0; count < m4_vertexNb - 1; count++)
+        {
+            // Pick the minimum distance vertex from the set of
+            // vertices not yet processed. u is always equal to src
+            // in first iteration.
+            int u = minDistance();
+     
+            // Mark the picked vertex as processed
+            mc_sptSet[u] = true;
+     
+            // Update mc_dist value of the adjacent vertices of the
+            // picked vertex.
+            for (int v = 0; v < m4_vertexNb; v++)
             {
-                minDist = factories[p_factoryId]->dist[i];
-                result = i;
+                // Update mc_dist[v] only if is not in mc_sptSet, there is
+                // an edge from u to v, and total weight of path from
+                // src to v through u is smaller than current value of
+                // mc_dist[v]
+                if (!mc_sptSet[v] && mc_matrix[u][v] &&
+                    mc_dist[u] + mc_matrix[u][v] < mc_dist[v])
+                {
+                    mc_parent[v]  = u;
+                    mc_dist[v] = mc_dist[u] + mc_matrix[u][v];
+                }  
+            }
+                
+        }   
+    }
+    
+    int getClosestGateway()
+    {
+        int result = getFirstGateway();
+        for (int v = 1; v < m4_vertexNb; v++)
+        {
+            if(mc_gateways[v] && mc_dist[v] < mc_dist[result])
+            {
+                cerr << "found " << v << " " << result << endl;
+                result = v;
             }
         }
         return result;
     }
     
-    void reset() {
-        for (int i = 0; i < factoryCount; i++) {
-            factories[i]->reset();
-            if (factories[i]->playerId == -1)
-                opCyborgsCount += factories[i]->cyborgsCount;
-            if (factories[i]->playerId == 1)
-                myCyborgsCount += factories[i]->cyborgsCount;
-        }
-        
-        for (int i = 0; i < troopsCount; i++) {
-            if (troops[i].playerId == -1)
-                opCyborgsCount += troops[i].cyborgsCount;
-            if (troops[i].playerId == 1)
-                myCyborgsCount += troops[i].cyborgsCount;
+    int getFirstGateway()
+    {
+        for (int v = 0; v < m4_vertexNb; v++)
+        {
+            if(mc_gateways[v])
+            {
+                return v;
+            }
         }
     }
-
+   
 };
-
 /**
  * Auto-generated code below aims at helping you parse
  * the standard input according to the problem statement.
  **/
 int main()
 {
-    Game game;
-    map<int, map<int, int>> dist;
-    
-    Factory** factories = new Factory*[15]; // Use the max number of factories
-    cin >> game.factoryCount; cin.ignore();
-    for (int i = 0; i < game.factoryCount; i++) {
-        factories[i] = new Factory();
-        factories[i]->id = i;
-        factories[i]->dist[i] = 0;
-        factories[i]->isChecked[i] = true;
+    int N; // the total number of nodes in the level, including the gateways
+    int L; // the number of links
+    int E; // the number of exit gateways
+    cin >> N >> L >> E; cin.ignore();
+    Graph* lc_graph = new Graph(N, L, E);
+    for (int i = 0; i < L; i++) {
+        int N1; // N1 and N2 defines a link between these nodes
+        int N2;
+        cin >> N1 >> N2; cin.ignore();
+        lc_graph->mc_matrix[N1][N2] = 1;
+        lc_graph->mc_matrix[N2][N1] = 1;
     }
-    game.factories = factories;
-    
-    Link** links = new Link*[98];
-    cin >> game.linkCount; cin.ignore();
-    
-    for (int i = 0; i < game.linkCount; i++) {
-        int factory1;
-        int factory2;
-        int distance;
-        cin >> factory1 >> factory2 >> distance; cin.ignore();
-        links[i] = new Link(factories[factory1], factories[factory2], distance);
-        factories[factory1]->dist[factory2] = distance;
-        factories[factory2]->dist[factory1] = distance;
-        cerr << factory1 << " " << factory2 << " " << distance << endl;
-        dist[factory1][factory2] = distance;
-        dist[factory2][factory1] = distance;
+    for (int i = 0; i < E; i++) {
+        int EI; // the index of a gateway node
+        cin >> EI; cin.ignore();
+        lc_graph->mc_gateways[EI] = true;
     }
-    
-    Graph* graph = new Graph(dist, game.factoryCount);
-    game.links = links;
-    game.graph = graph;
 
-    int troopsCount;
-    Troop troops[200];
     // game loop
-    int turn = 0;
     while (1) {
-        game.reset();
-        int entityCount; // the number of entities (e.g. factories and troops)
-        int troopsCount = 0;
-        cin >> entityCount; cin.ignore();
-        for (int i = 0; i < entityCount; i++) {
-            int entityId;
-            string entityType;
-            int arg1;
-            int arg2;
-            int arg3;
-            int arg4;
-            int arg5;
-            cin >> entityId >> entityType >> arg1 >> arg2 >> arg3 >> arg4 >> arg5; cin.ignore();
-            if (entityType.compare("FACTORY") == 0)
-            {
-                factories[entityId]->playerId = arg1;
-                factories[entityId]->cyborgsCount = arg2;
-                factories[entityId]->cyborgsProd = arg3;
-                if (turn == 0 && factories[entityId]->playerId == -1) {
-                    game.opBase = entityId;
-                }
-            }
-            else if (entityType.compare("TROOP") == 0)
-            {
-                Troop l_troop(arg1, arg4, arg5, arg2, arg3);
-                troops[troopsCount] = l_troop;
-                troops[troopsCount].id = entityId;
-                troopsCount++;
-                factories[l_troop.factoryTo]->incomingTroops.push_back(troopsCount);
-            }
-            game.troops = troops;
-            game.troopsCount = troopsCount;
-        }
+        int SI; // The index of the node on which the Skynet agent is positioned this turn
+        cin >> SI; cin.ignore();
 
         // Write an action using cout. DON'T FORGET THE "<< endl"
         // To debug: cerr << "Debug messages..." << endl;
-        
-        // Find my factories with the more cyborgs
-        cout << "WAIT;";
-        
-        int bombTo = -1;
-        bombTo = game.getWorthyBombTarget();
-        if (bombTo != -1) {
-            int bombFrom = game.getClosestFactory(1, bombTo);
-            cout << "BOMB " << bombFrom << " " << bombTo << ";";
-            factories[bombFrom]->isAvailable = false;
-            factories[bombTo]->isDisabled = true;
-            game.myBombsCount--;
-        }
-        
-        int increaseId = game.getWorthyIncrease();
-        if (increaseId != -1)
+        lc_graph->dijkstra(SI);
+        lc_graph->printSolution(SI);
+        int gtwIdx = lc_graph->getClosestGateway();
+        cerr << "gateway index : " << gtwIdx << endl;
+        int vertexId1 = gtwIdx;
+        int vertexId2 = lc_graph->mc_parent[gtwIdx];
+        while (lc_graph->mc_parent[vertexId2] != -1)
         {
-            cout << "INC " << increaseId << ";";
-        }
-        
-        int from = game.getMorePopFactory(1);
-        int to = -1;
-        if (from != -1)
-        {
-            to = game.getWorthyTarget(from);
-            //if (to == -1)
-            //    to = game.getWorthyTarget(0, from);
+            vertexId1 = vertexId2;
+            vertexId2 = lc_graph->mc_parent[vertexId2];
         }
 
-        while (to != -1)
-        {
-            if (from != -1) {
-                int troops = factories[to]->cyborgsCount + factories[from]->dist[to] * factories[to]->cyborgsProd + 1;
-            
-                // Any valid action, such as "WAIT" or "MOVE source destination cyborgs"
-                //if (factories[graph->next[from][to]]->playerId == -1) {
-                    if (factories[from]->cyborgsCount >= troops)
-                    {
-                        cout << "MOVE " << from << " " << graph->next[from][to] << " " << troops << ";";
-                        factories[from]->cyborgsCount -= troops;
-                    }
-                //}
-                //else 
-                //{
-                //    cout << "MOVE " << from << " " << graph->next[from][to] << " " << troops << ";";
-                //    factories[from]->cyborgsCount -= troops;
-                //}
-            }
-            from = game.getMorePopFactory(1);
-            if (from != -1)
-            {
-                to = game.getWorthyTarget(from);
-                //if (to == -1)
-                //    to = game.getWorthyTarget(0, from);
-            }
-            else
-                to = -1;
-        }
-        cout << "WAIT" << endl;
-        turn++;
+        // Example: 0 1 are the indices of the nodes you wish to sever the link between
+        cout << vertexId1 << " " << vertexId2 << endl;
+        lc_graph->mc_matrix[vertexId1][vertexId2] = 0;
+        lc_graph->mc_matrix[vertexId2][vertexId1] = 0;
     }
 }
